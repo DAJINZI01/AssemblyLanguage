@@ -1,0 +1,164 @@
+; 编程，以“年/月/日 时:分:秒”的格式，显示当前的日期，时间
+;       秒		00H
+;		分		02H
+;		时		04H
+;		日		07H
+;		月		08H
+;		年		09H
+
+
+ASSUME CS:CODE
+
+CODE SEGMENT
+
+	START:
+		; PRINT MEMERY ADDRESS
+		MOV AX, 0B800H
+		MOV DS, AX
+		MOV BX, 0A0H * 12 + 62
+	
+		;year
+		MOV AL, 09H
+		OUT 70H, AL
+		IN AL, 71H
+		
+		MOV AH, AL
+		AND AL, 0FH
+		ADD AL, 30H
+		MOV CL, 04H
+		SHR AH, CL
+		ADD AH, 30H
+		
+		MOV [BX], AH
+		MOV BYTE PTR [BX].01H, 61H
+		ADD BX, 0002H
+		MOV [BX], AL
+		MOV BYTE PTR [BX].01H, 61H
+		
+		; /
+		ADD BX, 0002H
+		MOV BYTE PTR [BX], '/'
+		MOV BYTE PTR [BX].01H, 04H
+		ADD BX, 0002H
+		
+		;month
+		MOV AL, 08H
+		OUT 70H, AL
+		IN AL, 71H
+		
+		MOV AH, AL
+		AND AL, 0FH
+		ADD AL, 30H
+		MOV CL, 04H
+		SHR AH, CL
+		ADD AH, 30H
+		
+		MOV [BX], AH
+		MOV BYTE PTR [BX].01H, 61H
+		ADD BX, 0002H
+		MOV [BX], AL
+		MOV BYTE PTR [BX].01H, 61H
+		
+		; /
+		ADD BX, 0002H
+		MOV BYTE PTR [BX], '/'
+		MOV BYTE PTR [BX].01H, 04H
+		ADD BX, 0002H
+		
+		;day
+		MOV AL, 07H
+		OUT 70H, AL
+		IN AL, 71H
+		
+		MOV AH, AL
+		AND AL, 0FH
+		ADD AL, 30H
+		MOV CL, 04H
+		SHR AH, CL
+		ADD AH, 30H
+		
+		MOV [BX], AH
+		MOV BYTE PTR [BX].01H, 61H
+		ADD BX, 0002H
+		MOV [BX], AL
+		MOV BYTE PTR [BX].01H, 61H
+	
+		; ' '
+		ADD BX, 0002H
+		MOV BYTE PTR [BX], ' '
+		MOV BYTE PTR [BX].01H, 07H
+		ADD BX, 0002H
+		
+		;hour
+		MOV AL, 04H
+		OUT 70H, AL
+		IN AL, 71H
+		
+		MOV AH, AL
+		AND AL, 0FH
+		ADD AL, 30H
+		MOV CL, 04H
+		SHR AH, CL
+		ADD AH, 30H
+		
+		MOV [BX], AH
+		MOV BYTE PTR [BX].01H, 0D3H
+		ADD BX, 0002H
+		MOV [BX], AL
+		MOV BYTE PTR [BX].01H, 0D3H
+		
+		; ':'
+		ADD BX, 0002H
+		MOV BYTE PTR [BX], ':'
+		MOV BYTE PTR [BX].01H, 07H
+		ADD BX, 0002H
+		
+		;minute
+		MOV AL, 02H
+		OUT 70H, AL
+		IN AL, 71H
+		
+		MOV AH, AL
+		AND AL, 0FH
+		ADD AL, 30H
+		MOV CL, 04H
+		SHR AH, CL
+		ADD AH, 30H
+		
+		MOV [BX], AH
+		MOV BYTE PTR [BX].01H, 0D3H
+		ADD BX, 0002H
+		MOV [BX], AL
+		MOV BYTE PTR [BX].01H, 0D3H
+		
+		; ':'
+		ADD BX, 0002H
+		MOV BYTE PTR [BX], ':'
+		MOV BYTE PTR [BX].01H, 07H
+		ADD BX, 0002H
+		
+		;second
+		MOV AL, 01H
+		OUT 70H, AL
+		IN AL, 71H
+		
+		MOV AH, AL
+		AND AL, 0FH
+		ADD AL, 30H
+		MOV CL, 04H
+		SHR AH, CL
+		ADD AH, 30H
+		
+		MOV [BX], AH
+		MOV BYTE PTR [BX].01H, 0ACH
+		ADD BX, 0002H
+		MOV [BX], AL
+		MOV BYTE PTR [BX].01H, 0ACH
+		
+		
+		MOV AX, 4C00H
+		INT 21H
+
+CODE ENDS
+
+END START

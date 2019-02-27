@@ -1,0 +1,63 @@
+;名称: add128
+;		功能：两个128位数据进行相加
+;		参数：DS:SI指向存储第一个数的内存空间，因数据为128位，所以需要8个字单元，
+;			  由低地址单元到到高地址单元一次存放128位数据由低到高的各个数字。
+;			  运算结果存储在第一个数的存储空间中
+
+ASSUME CS:CODE, DS:DATA, SS:STACK
+
+DATA SEGMENT
+	DB 88H, 88H, 88H, 88H, 88H, 88H, 88H, 88H, 88H, 88H, 88H, 88H, 88H, 88H, 88H, 88H
+	DB 80H, 80H, 80H, 80H, 80H, 80H, 80H, 80H, 80H, 80H, 80H, 80H, 80H, 80H, 80H, 80H
+	DB 11H, 11H, 11H, 11H, 11H, 11H, 11H, 11H, 11H, 11H, 11H, 11H, 11H, 11H, 11H, 11H
+DATA ENDS
+
+STACK SEGMENT
+	DB 16 DUP(0)
+STACK ENDS
+
+CODE SEGMENT
+
+	START:
+	; initiate DS
+	MOV AX, DATA
+	MOV DS, AX
+	
+	; initiate SS
+	MOV AX, STACK
+	MOV SS, AX
+	MOV SP, 0010H
+	
+	MOV BX, 0010H; 第二个数的基址
+	MOV SI, 0000H
+	MOV DI, 0000H
+	MOV CX, 000FH
+	CALL ADD128
+	
+		
+	; 程序返回
+	MOV AX, 4C00H
+	INT 21H
+	
+	ADD128:
+		PUSH AX
+		PUSH BX
+		PUSH CX
+		
+		SUB AX, AX; 将CF置0
+		S:
+			MOV AL, [SI]
+			ADC AL, [BX][DI]
+			MOV [SI], AL
+			INC SI; INC LOOP 指令不影响CF值
+			INC DI
+			LOOP S
+			
+		POP CX
+		POP BX
+		POP AX
+		RET
+	
+
+CODE ENDS
+END START

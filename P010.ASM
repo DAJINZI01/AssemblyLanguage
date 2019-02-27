@@ -1,0 +1,21 @@
+; 实验4 (1)编程，向内存够0::200 - 0:23F依次传送数据 0-63(3FH)
+ASSUME CS:CODESG
+
+CODESG SEGMENT
+
+START:	MOV AX, 0020H
+		MOV DS, AX
+		MOV BX, 0000H
+		
+		; 循环开始
+		MOV CX, 0040H
+S:		MOV [BX], BL
+		INC BX
+		LOOP S
+		
+		MOV AX, 4C00H
+		INT 21H
+
+
+CODESG ENDS
+END START

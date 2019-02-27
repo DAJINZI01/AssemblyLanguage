@@ -1,0 +1,137 @@
+; 编写一个接受字符串的输入子程序，实现上面三个基本功能。因为在输入的过程中需要显示，子程序的参数如下：
+; DH DL 字符串在屏幕上显示的行、列位置
+; DS:SI 指向字符串的存储空间，字符串以0结尾符。
+; 1、在输入的同时需要显示这个字符串
+; 2、一般在输入回车符后，字符串输入结束
+; 3、能够删除已经输入的字符串
+
+
+
+ASSUME CS:CODE, DS:DATA
+
+DATA SEGMENT
+	; DB 'HELLO WORLD', 0
+	DB 128 DUP (0)
+	TOP DB 0
+DATA ENDS
+
+CODE SEGMENT
+	
+	START:
+		; initiate DS
+		MOV AX, DATA
+		MOV DS, AX
+		
+		CALL INPUT_STR
+		
+		; return
+		MOV AX, 4C00H
+		INT 21H
+	INPUT_STR:
+		PUSH AX
+		GET_STR:
+			MOV AH, 00H
+			INT 16H
+			CMP AH, 0EH; 退格扫描码
+			JE BACKSPACE
+			CMP AH, 1CH; 回车扫描码
+			JE ENT
+			; ASCII 码 小于 30H 退出
+			CMP AL, '0'
+			JB INPUT_STR_RETURN
+			; 字符 AL 入栈
+			MOV AH, 00H
+			CALL STACK_FUNC
+			JMP SCREEN_SHOW_STR
+			BACKSPACE:
+				; 字符出栈
+				MOV AH, 01H
+				CALL STACK_FUNC
+				JMP SCREEN_SHOW_STR
+			ENT:
+				; 字符0入栈
+				MOV AH, 00H
+				MOV AL, 00H
+				CALL STACK_FUNC
+				; 显示字符
+				MOV AH, 02H
+				MOV AL, 02H
+				MOV DX, 0C00H
+				CALL STACK_FUNC
+				; 退出
+				JMP INPUT_STR_RETURN
+				
+			SCREEN_SHOW_STR:
+				; 显示字符
+				MOV AH, 02H
+				MOV AL, 02H
+				MOV DX, 0C00H
+				CALL STACK_FUNC
+			JMP GET_STR
+			
+		INPUT_STR_RETURN:
+			POP AX
+			RET
+			
+		
+	CHAR_STACK:
+		TABLE DW CHAR_PUSH, CHAR_POP, CHAR_SHOW
+		
+	STACK_FUNC:
+		CMP AH, 02H
+		JA STACK_FUNC_RETURN
+		MOV BL, AH
+		MOV BH, 00H
+		ADD BX, BX
+		CALL WORD PTR CHAR_STACK[BX]
+		STACK_FUNC_RETURN:
+			RET
+		
+	CHAR_PUSH:
+		CMP TOP, 80H
+		JA CHAR_PUSH_RETURN
+		MOV BL, TOP
+		MOV BH, 00H
+		MOV [BX], AL
+		INC TOP
+		CHAR_PUSH_RETURN:
+			RET
+	CHAR_POP:
+		CMP TOP, 00H
+		JNA CHAR_POP_RETURN
+		DEC TOP
+		MOV BL, TOP
+		MOV BH, 00H
+		MOV AL, [BX]
+		CHAR_POP_RETURN:
+			RET
+	CHAR_SHOW:
+		MOV BX, 0B800H
+		MOV ES, BX
+		MOV BL, AL
+		MOV AL, 0A0H
+		MUL DH
+		MOV DI, AX
+		MOV AL, 02H
+		MUL DL
+		ADD DI, AX
+		MOV SI, 0000H
+		
+		MOV CL, TOP
+		MOV CH, 00H
+		CMP CX, 0000H
+		JE CHAR_SHOW_END
+		CHAR_SHOW_S:
+			MOV AX, [SI]
+			MOV ES:[DI], AX
+			MOV ES:[DI+1], BL
+			INC SI
+			ADD DI, 0002H
+			LOOP CHAR_SHOW_S
+		CHAR_SHOW_END:
+			RET
+			
+		
+CODE ENDS
+
+END START

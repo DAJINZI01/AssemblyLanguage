@@ -1,0 +1,47 @@
+; 在屏幕中间分别显示绿色、绿底白色、白底蓝色的字符串welcome to masm!
+
+ASSUME CS:CODE, DS:DATA
+
+DATA SEGMENT
+	DB 'welcome to masm!'
+DATA ENDS
+
+
+
+CODE SEGMENT
+	START:
+	; 初始化DS
+	MOV AX, DATA
+	MOV DS, AX
+	
+	; 初始化ES
+	MOV AX, 0B800H
+	MOV ES, AX
+	
+	MOV SI, 0000H
+	MOV DI, 0000H
+	MOV CX, 0010H
+	S:
+	MOV AL, [SI]
+	
+	MOV ES:0720H[DI], AL
+	MOV BYTE PTR ES:0720H[DI+1], 02H; 绿色
+	
+	MOV ES:07C0H[DI], AL
+	MOV BYTE PTR ES:07C0H[DI+1], 27H; 绿底白色
+	
+	MOV ES:0860H[DI], AL
+	MOV BYTE PTR ES:0860H[DI+1], 71H; 白底蓝色
+	
+	
+	INC SI
+	ADD DI, 2
+	LOOP S
+	
+	; 程序返回
+	MOV AX, 4C00H
+	INT 21H
+	
+CODE ENDS
+
+END START

@@ -1,0 +1,115 @@
+; 实验7 寻址方式在结构化数据访问中的应用
+
+ASSUME CS:CODESG, SS:STACK, DS:DATA
+
+DATA SEGMENT
+	; 21年的21个字符串
+	DB '1975', '1976', '1977', '1978', '1979', '1980', '1981', '1982', '1983'
+	DB '1984', '1985', '1986', '1987', '1988', '1989', '1990', '1991', '1992'
+	DB '1993', '1994', '1995'
+	
+	; 21年公司总收入的21个dword型数据
+	DD 16, 22, 382, 1356, 2390, 8000, 16000, 24486, 50065, 97479, 140417, 197514
+	DD 345980, 590827, 803530, 1183000, 1843000, 2759000, 3753000, 4649000, 5937000
+	
+	; 21年公司雇员人数的21个word型数据
+	DW 3, 7, 9, 13, 28, 38, 130, 220, 476, 778, 1001, 1442, 2258, 2793, 4037, 5635, 8226
+	DW 11542, 14430, 15257, 17800
+
+	
+DATA ENDS
+
+
+TABLE SEGMENT
+	DB 21 DUP ('YEAR SUMM NE ?? ')
+TABLE ENDS
+
+
+STACK SEGMENT
+	DW 8 DUP (0); 定义一个栈，大小为16字节
+STACK ENDS;
+
+	
+CODESG SEGMENT
+	START:
+	; 初始化DS
+	MOV AX, DATA
+	MOV DS, AX
+	
+	; 初始化ES
+	MOV AX, TABLE
+	MOV ES, AX
+	
+	; 初始化SS
+	MOV AX, STACK
+	MOV SS, AX
+	MOV SP, 0010H
+
+	; 循环 21 次
+	MOV CX, 0015H
+	MOV DX, 0000H
+	MOV SI, 0000H
+	MOV DI, 0000H
+	
+	
+	
+	S0:
+	MOV AX, 0010H; TABLE的步长
+	MUL DL
+	MOV BP, AX;TABLE的偏移地址
+	
+	
+	MOV AX, 0004H; 年份的步长
+	MUL DL;
+	MOV BX, AX;年份的偏移地址
+	
+	PUSH CX
+	MOV CX, 0004H
+	MOV SI, 0000H
+	S1:
+	; 处理年份1
+	; 计算位置
+	MOV AL, [BX][SI]
+	MOV ES:[BP][SI], AL
+	INC SI
+	LOOP S1
+	POP CX
+	
+	; 处理收入4
+	MOV AX, 0004H; 收入的步长
+	MUL DL;
+	MOV BX, AX;
+	MOV AX, 54H[BX]; 收入的偏移地址
+	MOV ES:[BP].05H, AX
+	MOV AX, 56H[BX]
+	MOV ES:[BP].07H, AX
+	
+	; 处理雇员2
+	MOV AX, 0002H; 雇员的步长
+	MUL DL;
+	MOV BX, AX
+	MOV AX, 0A8H[BX];雇员的偏移地址
+	MOV ES:[BP].0AH, AX
+	
+	
+	; 处理人均收入2
+	; 计算人均收入
+	PUSH DX
+	MOV AX, ES:[BP].05H
+	MOV DX, ES:[BP].07H
+	;DIV WORD PTR ES:0AH[BP]
+	DIV WORD PTR 0A8H[BX]
+	MOV ES:[BP].0DH, AX
+	POP DX
+
+	INC DX
+	LOOP S0
+	
+	; 程序返回
+	MOV AX, 4C00H
+	INT 21H
+	
+
+CODESG ENDS
+
+END START

@@ -1,0 +1,61 @@
+; 功能：讲一个全是字母，以0结尾的字符串，转化为大写。
+
+ASSUME CS:CODE, DS:DATA, SS:STACK
+
+DATA SEGMENT
+	DB 'conversation', 0
+	DB 'word', 0
+	DB 'unix', 0
+	DB 'wind', 0
+	DB 'good', 0
+DATA ENDS
+
+STACK SEGMENT
+	DB 16 DUP (0)
+STACK ENDS
+
+CODE SEGMENT
+	START:
+	; initiate DS
+	MOV AX, DATA
+	MOV DS, AX
+	
+	; initiate SS
+	MOV AX, STACK
+	MOV SS, AX
+	MOV SP, 0010H
+	
+	;
+	MOV SI, 0000H; 传入参数的首地址
+	CALL CAPTIAL; 调用子程序
+	
+	;
+	MOV BX, 000DH
+	MOV CX, 0004H
+	S:
+	MOV SI, BX
+	PUSH CX
+	CALL CAPTIAL;
+	POP CX
+	ADD BX, 0005H
+	LOOP S
+	
+	; 返回
+	MOV AX, 4C00H
+	INT 21H
+	
+	
+	CAPTIAL:
+	MOV CH, 00H
+	MOV CL, [SI]
+	JCXZ OK
+	
+	AND BYTE PTR [SI], 5FH
+	INC SI
+	JMP SHORT CAPTIAL
+	OK:
+	RET
+	
+
+CODE ENDS
+END START

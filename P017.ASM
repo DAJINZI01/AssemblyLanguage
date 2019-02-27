@@ -1,0 +1,32 @@
+; 用寄存器SI和DI实现将字符串‘welcome to masm!’复制到它后面的数据区中
+
+ASSUME CS:CODESG, DS:DATASG
+
+DATASG SEGMENT
+	DB 'welcome to masm!'
+	DB '................'
+DATASG ENDS
+
+CODESG SEGMENT
+	START:
+	; 初始化DS
+	MOV AX, DATASG
+	MOV DS, AX
+	
+	MOV SI, 0000H
+	MOV DI, 0010H
+	MOV BX, 0000H
+	
+	MOV CX, 0010H
+	S:
+	MOV AL, [SI+BX]
+	MOV [DI+BX], AL
+	INC BX
+	LOOP S
+	
+	MOV AX, 4C00H
+	INT 21H
+	
+CODESG ENDS
+
+END START

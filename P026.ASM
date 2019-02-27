@@ -1,0 +1,54 @@
+ASSUME CS:CODE, SS:STACK, DS:DATA
+
+DATA SEGMENT
+	DB 1, 2, 3, 4, 5, 6, 7, 8
+	DW 0, 0, 0, 0, 0, 0, 0, 0
+DATA ENDS
+
+STACK SEGMENT
+	DW 8 DUP (0)
+STACK ENDS
+
+CODE SEGMENT
+
+	START:
+	; 初始化DS
+	MOV AX, DATA
+	MOV DS, AX
+	; 初始化SS
+	MOV AX, STACK
+	MOV SS, AX
+	MOV SP, 0010H
+	
+	; 循环计算
+	MOV CX, 0008H
+	MOV SI, 0000H
+	MOV DI, 0000H
+	S:
+	MOV BL, [SI]; 传参
+	CALL CUBE; 调用函数
+	MOV WORD PTR 08H[DI], AX; 保存返回值
+	INC SI
+	ADD DI, 2
+	LOOP S
+	
+	
+	
+	; 主程序返回
+	MOV AX, 4C00H
+	INT 21H
+	
+	; 子程序 计算N^3 形参 BL 返回值 AX
+	CUBE:
+	MOV AX, 0000H
+	MOV AL, BL
+	MUL BL
+	MUL BL
+	RET
+	
+	
+
+
+CODE ENDS
+
+END START

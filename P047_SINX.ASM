@@ -1,0 +1,51 @@
+; 任务二：编写一个子程序，计算sin(x)
+; x ∈ (0, 30, 60, 90, 120, 150, 180)，并在屏幕中间显示计算结果。
+; 列如 sin(30) 的结果 为0.5
+;
+;
+
+ASSUME CS:CODE, DS:DATA
+
+DATA SEGMENT
+	TABLE DB "0.000 0.500 0.866 1.000 0.866 0.500 0.000"
+DATA ENDS
+
+CODE SEGMENT
+
+	START:
+		MOV AX, DATA
+		MOV DS, AX
+		
+		MOV AX, 003CH
+		CALL SIN_X
+		
+		; MAIN RETURN
+		MOV AX, 4C00H
+		INT 21H
+
+	;;;;;;;;;;;;;;;;;; SIN(X) ;;;;;;;;;;;;;;
+	; 参数 AX
+	SIN_X:
+		MOV BL, 1EH
+		DIV BL
+		MOV BL, 06H
+		MUL BL
+		MOV BX, AX
+		; INITIATE SCREEN MEMERY
+		MOV AX, 0B800H
+		MOV ES, AX
+		MOV DI, 0A0H * 12 + 4AH
+		; SHOW
+		MOV CX, 0006H
+		SIN_X_S:
+			MOV AL, TABLE[BX]
+			MOV ES:[DI], AL
+			MOV BYTE PTR ES:[DI+1], 0AH
+			ADD DI, 0002H
+			INC BX
+			LOOP SIN_X_S
+		
+		RET
+		
+CODE ENDS
+END START
