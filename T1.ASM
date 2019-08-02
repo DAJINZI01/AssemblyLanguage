@@ -1,0 +1,291 @@
+; 编程，将data段中的数据按如下格式写入到table段中，并计算21年中的人均收入（取整），结果也按照下面的格式保存在table段中。
+
+ASSUME CS:CODE, DS:DATA, SS:STACK
+
+DATA SEGMENT
+	; 21年的21个字符串 (0000 - 0053H)
+	DB '1975', '1976', '1977', '1978', '1979', '1980', '1981', '1982', '1975'
+	DB '1984', '1985', '1986', '1987', '1988', '1989', '1990', '1991', '1992'
+	DB '1993', '1994', '1995'
+	; 21年公司总收入的21个DWORD型数据 (0054H - 00A7H)
+	DD 16, 22, 382, 1356, 2390, 8000, 16000, 24486, 50065, 97479, 140417, 197514 
+	DD 345980, 590827, 803530, 1183000, 1843000, 2759000, 3753000, 4649000, 5937000
+	; 21年公司雇员人数的21个WORD型数据 (00A8H - 00D1H)
+	DW 3, 7, 9, 13, 28, 38, 130, 220, 476, 778, 1001, 1442, 2258, 2793, 4037, 5635, 8226 
+	DW 11542, 14430, 15257, 17800
+DATA ENDS
+
+TABLE SEGMENT
+	DB 21 DUP ('year summ ne ?? ')
+	BUFF 	DB 128 DUP (0)
+	YEAR 	DB 'years', 0
+	SUMMARY	DB 'summary', 0
+	PEOPLE	DB 'total people', 0
+	AVER	DB 'avere salar', 0
+TABLE ENDS
+
+STACK SEGMENT
+	DB 128 DUP (0)
+STACK ENDS
+
+CODE SEGMENT
+	START:
+	MOV AX, DATA
+	MOV DS, AX
+	MOV AX, STACK
+	MOV SS, AX
+	MOV SP, 0080H
+	MOV AX, TABLE
+	MOV ES, AX
+
+	MOV BX, 0000H
+	MOV BP, 0000H
+	MOV SI, 0000H
+	MOV CX, 0015H
+	S2:
+
+	; 年份
+	PUSH CX
+	PUSH SI
+	MOV CX, 0004H
+	MOV SI, 0000H
+	S1:
+	MOV AL, DS:[BP][SI]
+	MOV ES:[BX][SI], AL
+	INC SI
+	LOOP S1 
+	POP SI
+
+	; 总收入
+	MOV AX, DS:54H[BP]
+	MOV DX, DS:54H[BP].02H
+	MOV ES:[BX].05H, AX
+	MOV ES:[BX].07H, DX
+	; 雇员人数 
+	MOV AX, 0A8H[SI]
+	MOV ES:[BX].0AH, AX
+	; 人均收入 
+	MOV AX, DS:54H[BP]
+	MOV DX, DS:54H[BP].02H
+	DIV WORD PTR 0A8H[SI]
+	MOV ES:[BX].0DH, AX
+
+	ADD BP, 0004H
+	ADD SI, 0002H
+	ADD BX, 0010H
+	POP CX
+	LOOP S2 
+
+	; 屏幕输出
+	MOV AX, TABLE
+	MOV DS, AX
+	; 04H 19H 2EH 43H
+	MOV DH, 01H
+	; 标题 年份
+	MOV SI, OFFSET YEAR
+	MOV DL, 04H
+	MOV CL, 34H
+	CALL SHOW_STR	
+	; 标题 总收入
+	MOV SI, OFFSET SUMMARY 
+	MOV DL, 19H
+	MOV CL, 34H
+	CALL SHOW_STR	
+	; 标题 雇员人数
+	MOV SI, OFFSET PEOPLE 
+	MOV DL, 2EH
+	MOV CL, 34H
+	CALL SHOW_STR	
+	; 标题 人均收入
+	MOV SI, OFFSET AVER 
+	MOV DL, 43H
+	MOV CL, 34H
+	CALL SHOW_STR	
+
+	; 年份
+	MOV BX, 0000H
+	MOV CX, 0015H
+	MOV DH, 03H
+	TABLE_S:
+
+	PUSH CX
+	MOV SI, 0000H
+	MOV DI, OFFSET BUFF
+	MOV CX, 0004H
+	PRINT_S:
+	MOV AL, [BX][SI]
+	MOV [DI], AL
+	INC SI
+	INC DI
+	LOOP PRINT_S 
+	MOV BYTE PTR [DI], 00H
+
+	MOV SI, OFFSET BUFF
+	MOV DL, 04H
+	MOV CL, 03H
+	CALL SHOW_STR
+
+	; 总收入
+	PUSH BX
+	PUSH DX
+	MOV AX, ES:05H[BX]
+	MOV DX, ES:07H[BX]
+	MOV SI, OFFSET BUFF
+	CALL DTOC
+	MOV BYTE PTR [SI][BX], 00H 
+	POP DX
+	POP BX
+
+	MOV DL, 19H
+	MOV CL, 05H
+	CALL SHOW_STR
+
+	; 雇员人数
+	PUSH BX
+	PUSH DX
+	MOV AX, ES:0AH[BX]
+	MOV DX, 0000H
+	MOV SI, OFFSET BUFF
+	CALL DTOC
+	MOV BYTE PTR [SI][BX], 00H 
+	POP DX
+	POP BX
+
+	MOV DL, 2EH
+	MOV CL, 01H
+	CALL SHOW_STR
+
+	; 人均收入 
+	PUSH BX
+	PUSH DX
+	MOV AX, ES:0DH[BX]
+	MOV DX, 0000H
+	MOV SI, OFFSET BUFF
+	CALL DTOC
+	MOV BYTE PTR [SI][BX], 00H 
+	POP DX
+	POP BX
+
+	MOV DL, 43H
+	MOV CL, 02H
+	CALL SHOW_STR
+	
+	INC DH
+	ADD BX, 0010H
+	POP CX
+	LOOP TABLE_S
+	
+	
+
+	MOV AX, 4C00H
+	INT 21H
+	
+	SHOW_STR:
+	; 名称：show_str
+	; 功能：在指定位置，用指定的颜色，显示一个用0结束的字符串
+	; 参数：(dh) = 行号(取值范围0-24), (dl)= 列号(取值范围0-79), (cl) = 颜色, ds:si指向字符串的首地址
+	; 返回：无
+	PUSH ES
+	PUSH AX
+	PUSH BX
+	PUSH CX
+	PUSH DX
+	PUSH SI
+	PUSH DI
+
+	MOV AX, 0B800H
+	MOV ES, AX
+	MOV AL, 0A0H
+	MUL DH
+	MOV BX, AX
+	MOV AL, 02H
+	MUL DL
+	ADD BX, AX
+
+	MOV DI, 0000H
+	MOV AL, CL
+	S:
+	MOV CL, [SI]
+	MOV CH, 00H
+	JCXZ OK 
+	MOV ES:[BX][DI], CL
+	MOV ES:[BX][DI].01H, AL
+	INC SI
+	ADD DI, 0002H
+	JMP SHORT S
+
+	OK:
+	POP DI
+	POP SI
+	POP DX
+	POP CX
+	POP BX
+	POP AX
+	POP ES
+	RET
+	
+	DIVDW:
+	; 名称：divdw
+	; 功能：进行不会产生溢出的除法算法，被除数为DWORD型，除数为word型，结果为DWORD型
+	; 参数：(ax) = DWORD型数据的低16位, (dx)= DWORD型数据的高16位, (cx) = 除数 
+	; 返回：(dx) = 结果的高16位, (ax)= 结果的低16位, (cx) = 余数 
+
+	PUSH BX
+
+	PUSH AX
+	MOV AX, DX
+	MOV DX, 0000H
+	DIV CX 
+	MOV BX, AX
+	POP AX
+	DIV CX
+	MOV CX, DX
+	MOV DX, BX
+
+	POP BX
+	RET
+
+
+	DTOC:
+	; 名称：dtoc
+	; 功能：将word型数据转变为表示十进制数的字符串，字符串以0为结尾符
+	; 参数：(ax) = DWORD型数据的低16位, (dx)= DWORD型数据的高16位, DS:SI指向字符串的首地址 
+	; 返回：BX(字符个数)
+	PUSH AX
+	PUSH CX
+	PUSH DX
+	PUSH SI
+	
+	MOV BX, 0000H; 计数
+	DTOC_S1:
+	MOV CX, 000AH
+	CALL DIVDW
+	PUSH CX
+	INC BX
+	MOV CX, AX
+	JCXZ NEXT
+	AGAIN:
+	JMP SHORT DTOC_S1
+	NEXT:
+	MOV CX, DX
+	JCXZ NULL 
+	JMP SHORT AGAIN
+
+	NULL:
+	MOV CX, BX
+	DTOC_S2:
+	POP DX
+	ADD DL, 30H
+	MOV [SI], DL
+	INC SI
+	LOOP DTOC_S2
+	
+	POP SI
+	POP DX
+	POP CX
+	POP AX	
+	RET
+
+CODE ENDS
+	END START
+

@@ -1,0 +1,166 @@
+
+ASSUME CS:CODE, DS:DATA, SS:STACK
+
+DATA SEGMENT
+	STR	DB 'Welcome to masm!', 0
+	; INTEGER	DW 123, 12666, 1, 8, 3, 38
+	BUFF	DB 128 DUP (0)
+DATA ENDS
+
+STACK SEGMENT
+	DB 128 DUP (0)
+STACK ENDS
+
+CODE SEGMENT
+	START:
+	MOV AX, DATA
+	MOV DS, AX
+	MOV AX, STACK
+	MOV SS, AX
+	MOV SP, 0080H
+
+	MOV DH, 08H
+	MOV DL, 03H
+	MOV CL, 02H
+	MOV SI, 0000H
+	CALL SHOW_STR
+
+	MOV AX, 4240H
+	MOV DX, 000FH
+	MOV CX, 0AH
+	CALL DIVDW
+
+	MOV AX, 12666
+	MOV DX, 0000H
+	MOV SI, OFFSET BUFF 
+	CALL DTOC
+	
+	MOV DH, 08H
+	MOV DL, 03H
+	MOV CL, 02H
+	CALL SHOW_STR
+
+	MOV AX, 4C00H
+	INT 21H
+
+	SHOW_STR:
+	; 名称：show_str
+	; 功能：在指定位置，用指定的颜色，显示一个用0结束的字符串
+	; 参数：(dh) = 行号(取值范围0-24), (dl)= 列号(取值范围0-79), (cl) = 颜色, ds:si指向字符串的首地址
+	; 返回：无
+	PUSH ES
+	PUSH AX
+	PUSH BX
+	PUSH CX
+	PUSH SI
+	PUSH DI
+
+	MOV AX, 0B800H
+	MOV ES, AX
+	MOV AL, 0A0H
+	MUL DH
+	MOV BX, AX
+	MOV AL, 02H
+	MUL DL
+	ADD BX, AX
+
+	MOV DI, 0000H
+	MOV AL, CL
+	S:
+	MOV CL, [SI]
+	MOV CH, 00H
+	JCXZ OK 
+	MOV ES:[BX][DI], CL
+	MOV ES:[BX][DI].01H, AL
+	INC SI
+	ADD DI, 0002H
+	JMP SHORT S
+
+	OK:
+	POP DI
+	POP SI
+	POP CX
+	POP BX
+	POP AX
+	POP ES
+	RET
+	
+	DIVDW:
+	; 名称：divdw
+	; 功能：进行不会产生溢出的除法算法，被除数为DWORD型，除数为word型，结果为DWORD型
+	; 参数：(ax) = DWORD型数据的低16位, (dx)= DWORD型数据的高16位, (cx) = 除数 
+	; 返回：(dx) = 结果的高16位, (ax)= 结果的低16位, (cx) = 余数 
+
+	PUSH BX
+
+	PUSH AX
+	MOV AX, DX
+	MOV DX, 0000H
+	DIV CX 
+	MOV BX, AX
+	POP AX
+	DIV CX
+	MOV CX, DX
+	MOV DX, BX
+
+	POP BX
+	RET
+
+
+	DTOC:
+	; 名称：dtoc
+	; 功能：将word型数据转变为表示十进制数的字符串，字符串以0为结尾符
+	; 参数：(ax) = WORD型数据, DS:S指向字符串的首地址 
+	; 返回：无
+	PUSH AX
+	PUSH BX
+	PUSH CX
+	PUSH DX
+	PUSH SI
+	
+;	MOV BX, 000AH
+;	MOV CX, 0000H
+;	DTOC_S1:
+;	MOV DX, 0000H
+;	DIV BX
+;	INC Cx
+;	PUSH DX
+;	PUSH CX
+;	MOV CX, AX
+;	JCXZ NULL
+;	POP CX
+;	JMP SHORT DTOC_S1
+
+	MOV BX, 0000H; 计数
+	DTOC_S1:
+	MOV CX, 000AH
+	CALL DIVDW
+	PUSH CX
+	INC BX
+	MOV CX, AX
+	JCXZ NEXT
+	AGAIN:
+	JMP SHORT DTOC_S1
+	NEXT:
+	MOV CX, DX
+	JCXZ NULL 
+	JMP SHORT AGAIN
+
+	NULL:
+	MOV CX, BX
+	DTOC_S2:
+	POP DX
+	ADD DL, 30H
+	MOV [SI], DL
+	INC SI
+	LOOP DTOC_S2
+	
+	POP SI
+	POP DX
+	POP CX
+	POP BX
+	POP AX	
+	RET
+
+CODE ENDS
+	END START

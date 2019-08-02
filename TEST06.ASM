@@ -1,0 +1,46 @@
+; 编程，将DATA段中每个单词的前4个字母改为大写字母
+
+ASSUME CS:CODE, SS:STACK, DS:DATA
+
+DATA SEGMENT
+	DB '1. display      '
+	DB '2. brows        '
+	DB '3. replace      '
+	DB '4. modify       '
+DATA ENDS
+
+STACK SEGMENT
+	dw 0, 0, 0, 0, 0, 0, 0, 0
+STACK ENDS
+
+CODE SEGMENT
+	START:
+	MOV AX, DATA
+	MOV DS, AX
+	MOV AX, STACK
+	MOV SS, AX
+	MOV SP, 0010H
+
+	MOV BX, 0000H
+	MOV CX, 0004H
+	S2:
+
+	PUSH CX
+	MOV SI, 0000H
+	MOV CX, 0004H
+	S1:
+	MOV AL, 3[BX][SI]
+	AND AL, 0DFH
+	MOV 3[BX][SI], AL
+	INC SI
+	LOOP S1
+
+	ADD BX, 0010H
+	POP CX
+	LOOP S2
+
+	MOV AX, 4C00H
+	INT 21H
+	
+CODE ENDS
+	END START

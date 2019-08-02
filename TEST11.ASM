@@ -1,0 +1,106 @@
+; 编写英特子程序，将包含任意字符，以0结尾的字符串中的小写字母转变为大写字母
+
+ASSUME CS:CODE, DS:DATA, SS:STACK
+
+DATA SEGMENT
+	DB "Beginner's All-purpose Symbolic Instruction Code.", 0
+DATA ENDS
+
+STACK SEGMENT
+	DB 128 DUP (0)
+STACK ENDS
+
+CODE SEGMENT
+	START:
+	MOV AX, DATA
+	MOV DS, AX
+	MOV AX, STACK
+	MOV SS, AX
+	MOV SP, 0080H
+
+	MOV DX, 0404H
+	MOV CL, 04H
+	MOV SI, 0000H
+	CALL SHOW_STR
+
+	MOV SI, 0000H
+	CALL LETTERC
+
+	MOV DX, 0604H
+	MOV CL, 02H
+	MOV SI, 0000H
+	CALL SHOW_STR
+
+	MOV AX, 4C00H
+	INT 21H
+
+	LETTERC:
+	; 名称：letterc
+	; 功能：以0结尾的字符串中的小写字母转变为大写字母
+	; 参数：DS:SI指向字符串的首地址
+	PUSH AX
+	PUSH SI
+
+	LETTERC_S:
+	MOV AL, [SI]
+	CMP AL, 00H
+	JZ ZERO
+	CMP AL, 61H
+	JB NO_IN_RANGE
+	CMP AL, 7BH
+	JA NO_IN_RANGE
+	AND AL, 0DFH
+	MOV [SI], AL
+	NO_IN_RANGE:
+	INC SI
+	JMP SHORT LETTERC_S	
+
+	ZERO:
+	POP SI
+	POP AX
+	RET
+	
+	SHOW_STR:
+	; 名称：show_str
+	; 功能：在指定位置，用指定的颜色，显示一个用0结束的字符串
+	; 参数：(dh) = 行号(取值范围0-24), (dl)= 列号(取值范围0-79), (cl) = 颜色, ds:si指向字符串的首地址
+	; 返回：无
+	PUSH ES
+	PUSH AX
+	PUSH BX
+	PUSH CX
+	PUSH SI
+	PUSH DI
+
+	MOV AX, 0B800H
+	MOV ES, AX
+	MOV AL, 0A0H
+	MUL DH
+	MOV BX, AX
+	MOV AL, 02H
+	MUL DL
+	ADD BX, AX
+
+	MOV DI, 0000H
+	MOV AL, CL
+	S:
+	MOV CL, [SI]
+	MOV CH, 00H
+	JCXZ OK 
+	MOV ES:[BX][DI], CL
+	MOV ES:[BX][DI].01H, AL
+	INC SI
+	ADD DI, 0002H
+	JMP SHORT S
+
+	OK:
+	POP DI
+	POP SI
+	POP CX
+	POP BX
+	POP AX
+	POP ES
+	RET
+	
+CODE ENDS
+	END START

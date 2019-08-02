@@ -1,0 +1,49 @@
+DATA 	SEGMENT
+MESG	DB		'Please Enter !', 0DH, 0AH, '$'
+DATA	ENDS
+
+CODE	SEGMENT
+		ASSUME DS:DATA, CS:CODE
+START:	MOV 	AX, DATA
+		MOV		DS, AX
+		; 显示提示信息
+		MOV 	DX, OFFSET MESG
+		MOV 	AH, 09H
+		INT 	21H
+		; 等待输入字符
+		MOV		AH, 01H
+		INT		21H
+		; 输入字符范围
+		CMP		AL, 3AH
+		JB		R1_9
+		SUB		AL, 07H
+R1_9:	SUB		AL, 30H
+		MOV		BL, AL
+		; 显示 ‘=’
+		MOV		AH, 02H
+		MOV		DL, '='
+		INT		21H
+		; 调用二进制显示程序
+		CALL	DISP
+		; 显示 ‘B’
+		MOV		AH, 02H
+		MOV		DL, 'B'
+		INT		21H
+		
+		; 程序放回到DOS
+		MOV		AX, 4C00H
+		INT 	21H
+DISP	PROC
+		MOV		CX, 0008H
+LOOP_S:	MOV		DL, '0'
+		RCL		BL, 1
+		JNC		CF_NULL
+		MOV		DL, '1'
+CF_NULL:
+		MOV		AH, 02H
+		INT 	21H
+		LOOP	LOOP_S
+		RET
+DISP	ENDP
+CODE	ENDS
+		END		START

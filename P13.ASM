@@ -1,0 +1,146 @@
+ASSUME CS:CODE, DS:DATA
+
+DATA SEGMENT
+	DB 'conversation', 0
+DATA ENDS
+
+CODE SEGMENT
+	START:
+	; 安装中断处理程序
+	MOV AX, CS
+	MOV DS, AX
+	MOV AX, 0000H
+	MOV ES, AX
+	; MOV SI, OFFSET SQR
+	; MOV SI, OFFSET CAPITAL 
+	; MOV SI, OFFSET LP 
+	; MOV SI, OFFSET JUMP 
+	MOV SI, OFFSET SHOW_STR 
+	MOV DI, 0200H
+	; MOV CX, OFFSET SQR_END - OFFSET SQR
+	; MOV CX, OFFSET CAPITAL_END - OFFSET CAPITAL 
+	; MOV CX, OFFSET LP_END - OFFSET LP 
+	; MOV CX, OFFSET JUMP_END - OFFSET JUMP 
+	MOV CX, OFFSET SHOW_STR_END - OFFSET SHOW_STR 
+	CLD
+	REP MOVSB
+	; 设置中断向量表 
+	MOV AX, 0000H
+	MOV DS, AX
+	MOV WORD PTR DS:[7CH*4], 0200H
+	MOV WORD PTR DS:[7CH*4+2], 0000H
+	; 测试中断处理程序是否编写正确
+	MOV AX, DATA
+	MOV DS, AX
+	MOV SI, 0000H
+	MOV DX, 0C08H
+	MOV CL, 03H
+	INT 7CH
+	; 程序返回到DOS
+	MOV AX, 4C00H
+	INT 21H
+
+	SQR:
+	; 名称：sqr
+	; 功能：求一word型数据的平方
+	; 参数：(ax) = 要计算的数据
+	; 返回值：dx、ax中存放结果的高16位和低16位
+	MUL AX
+	IRET
+	SQR_END:
+	NOP
+
+	CAPITAL:
+	; 名称：capital
+	; 功能：将一个全是字母，以0结尾的字符串，转换为大写
+	; 参数：DS:SI指向字符串的首地址
+	; 返回值：无
+	PUSH AX
+	PUSH SI
+
+	CAPITAL_S:
+	MOV AL, [SI]
+	CMP AL, 00H
+	JZ SHORT ZERO
+	AND BYTE PTR [SI], 0DFH
+	INC SI
+	JMP SHORT CAPITAL_S
+	
+	ZERO:
+	POP SI
+	POP AX
+	IRET
+	CAPITAL_END:
+	NOP
+
+	LP:
+	; 名称：lp
+	; 功能：模拟loop指令的功能
+	; 参数：(cx) = 循环次数, (bx) = 位移 
+	; 返回值：无
+	PUSH BP
+	MOV BP, SP
+	DEC CX
+	JCXZ NULL
+	ADD [BP+2], BX 
+	NULL:
+	POP BP
+	IRET
+	LP_END:
+	NOP
+	
+	JUMP:
+	; 名称：JUMP
+	; 功能：模拟JMP NEAR PTR 标号 指令的功能
+	; 参数：(bx) = 位移 
+	; 返回值：无
+	PUSH BP
+	MOV BP, SP
+	ADD [BP+2], BX 
+	POP BP
+	IRET
+	JUMP_END:
+	NOP
+
+	SHOW_STR:
+	; 名称：SHOW_STR
+	; 功能：显示一个以0结尾的字符串
+	; 参数：(dh) = 行号, (dl) = 列号, (cl) = 颜色, ds:si指向字符串的首地址 
+	; 返回值：无
+	PUSH AX
+	PUSH CX
+	PUSH DX
+	PUSH SI
+	PUSH DI
+	
+	MOV AX, 0B800H
+	MOV ES, AX
+	MOV AL, 0A0H
+	MUL DH
+	MOV DI, AX
+	MOV AL, 02H
+	MUL DL
+	ADD DI, AX
+
+	SHOW_STR_S:
+	MOV AL, [SI]
+	CMP AL, 00H
+	JZ SHOW_STR_RET
+	MOV ES:[DI], AL
+	MOV ES:[DI].01H, CL
+	INC SI
+	ADD DI, 0002H
+	JMP SHORT SHOW_STR_S
+
+	SHOW_STR_RET:
+	POP DI
+	POP SI
+	POP DX
+	POP CX
+	POP AX
+	IRET
+	SHOW_STR_END:
+	NOP
+
+CODE ENDS
+	END START
